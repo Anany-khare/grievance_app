@@ -1,24 +1,29 @@
-// src/App.jsx
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import AdminDashboard from './pages/AdminDashboard';
-import StudentDashboard from './pages/StudentDashboard';
-import ProctorDashboard from './pages/ProctorDashboard';
-import HodDashboard from './pages/HodDashboard';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Login from './pages/Login'; 
+import GrievanceForm from './pages/GrievancePage'; 
+import Dashboard from './pages/Dashboard';
 
-const App = () => {
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/proctor/dashboard" element={<ProctorDashboard />} />
-        <Route path="/hod/dashboard" element={<HodDashboard />} />
+        
+        <Route
+          path="/"
+          element={<GrievanceForm />}
+        />
+        <Route
+          path="/login"
+          element={<Login setIsLoggedIn={setIsLoggedIn} />} 
+        />
+        <Route
+          path="/dashboard"
+          element={isLoggedIn ? <Dashboard /> : <Login setIsLoggedIn={setIsLoggedIn} />}
+        />
       </Routes>
     </Router>
   );
-};
-
-export default App;
+}
