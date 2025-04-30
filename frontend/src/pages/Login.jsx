@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-// const [isLoggedIn, setIsLoggedIn] = useState(false);
-
 
 export default function Login({ setIsLoggedIn }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [searchTicketNo, setSearchTicketNo] = useState('');
   const navigate = useNavigate();
+
+  // ✅ Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsLoggedIn(true); // Optional: update parent state
+      navigate('/dashboard');
+    }
+  }, [navigate, setIsLoggedIn]);
 
   const login = async (e) => {
     e.preventDefault();
@@ -18,15 +26,10 @@ export default function Login({ setIsLoggedIn }) {
         { withCredentials: true }
       );
 
-      const { token, user } = response.data;
+      const { token } = response.data;
 
-      // Store token in local storage or context (to use in further requests)
       localStorage.setItem('authToken', token);
-
-      console.log('Login successful, token:', token);
-      setIsLoggedIn(true); // Set the login state to true
-
-      // Navigate to the dashboard
+      setIsLoggedIn(true);
       navigate('/dashboard');
     } catch (err) {
       alert('Login failed');
@@ -35,27 +38,53 @@ export default function Login({ setIsLoggedIn }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={login} className="bg-white p-8 rounded shadow w-96 space-y-4">
-        <h2 className="text-2xl font-bold">Admin / HOD Login</h2>
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full border p-2 rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border p-2 rounded"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">Login</button>
-      </form>
+    <div className="min-h-screen bg-gray-100">
+      {/* ✅ Navbar */}
+      <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow">
+        <a href="/"><h1 className="text-xl font-semibold">Grievance System</h1> </a>
+        <div className="flex gap-3 items-center">
+          <input
+            type="text"
+            placeholder="Search Ticket No"
+            value={searchTicketNo}
+            onChange={(e) => setSearchTicketNo(e.target.value)}
+            className="p-1 rounded text-black"
+          />
+          <button className="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-200">
+            Search
+          </button>
+          <button
+            className="bg-gray-300 text-gray-500 px-3 py-1 rounded cursor-not-allowed"
+            disabled
+          >
+            Login
+          </button>
+        </div>
+      </nav>
+
+      {/* 👇 Login Form */}
+      <div className="flex items-center justify-center py-16">
+        <form onSubmit={login} className="bg-white p-8 rounded shadow w-96 space-y-4">
+          <h2 className="text-2xl font-bold">Admin / HOD Login</h2>
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full border p-2 rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full border p-2 rounded"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">Login</button>
+        </form>
+      </div>
     </div>
   );
 }

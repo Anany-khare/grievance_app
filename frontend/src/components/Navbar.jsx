@@ -1,61 +1,52 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Navbar({ isLoggedIn, setIsLoggedIn }) {
-  const [ticket, setTicket] = useState('');
-  const [result, setResult] = useState(null);
+const Navbar = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation(); // to get current route path
 
-  const search = async () => {
-    if (!ticket) return;
-    try {
-      const res = await axios.get(`http://localhost:5000/api/grievance/search/${ticket}`);
-      setResult(res.data);
-    } catch (err) {
-      alert('Ticket not found');
-      setResult(null);
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsLoggedIn(true);  // user is logged in
+    } else {
+      setIsLoggedIn(false); // user is not logged in
+    }
+  }, []);
+
+  const handleClick = () => {
+    if (location.pathname === '/grievance') {
+      if (!isLoggedIn) {
+        navigate('/login'); // If not logged in, go to login page
+      } else {
+        navigate('/dashboard'); // If logged in, go to dashboard
+      }
+    } else if (location.pathname === '/dashboard') {
+      localStorage.removeItem('authToken');  // logout action
+      setIsLoggedIn(false);
+      navigate('/'); // redirect to home or login page
     }
   };
 
-  const logout = () => {
-    axios
-      .post('http://localhost:5000/api/auth/logout', {}, { withCredentials: true })
-      .then(() => {
-        setIsLoggedIn(false);
-        navigate('/login');
-      })
-      .catch(() => alert('Error logging out'));
-  };
-
   return (
-    <div className="bg-blue-600 text-white flex justify-between px-6 py-3 shadow">
-      <h1 className="text-xl font-bold cursor-pointer" onClick={() => navigate('/')}>
-        Grievance Portal
-      </h1>
-      <div className="flex gap-4 items-center">
-        {isLoggedIn ? (
-          <>
-            <button onClick={logout} className="bg-white text-blue-600 px-3 py-1 rounded">
-              Logout
-            </button>
-          </>
-        ) : (
-          <Link to="/login" className="bg-white text-blue-600 px-3 py-1 rounded">
-            Login
-          </Link>
+    <div className="navbar bg-gray-800 p-4 flex justify-between items-center text-white">
+      <div className="logo">Your Logo</div>
+      <button
+        onClick={handleClick}
+        className="bg-blue-600 px-4 py-2 rounded"
+        disabled={location.pathname === '/login' && isLoggedIn} // Disable if on login page and already logged in
+      >
+        {location.pathname === '/grievance' ? ( // If grievance page
+          isLoggedIn ? 'Dashboard' : 'Login'
+        ) : location.pathname === '/dashboard' ? ( // If on dashboard
+          'Logout'
+        ) : ( // If not in above two
+          'Login'
         )}
-        <input
-          type="text"
-          placeholder="Search Ticket No"
-          value={ticket}
-          onChange={(e) => setTicket(e.target.value)}
-          className="p-1 rounded text-black"
-        />
-        <button onClick={search} className="bg-white text-blue-600 px-3 py-1 rounded">
-          Search
-        </button>
-      </div>
+      </button>
     </div>
   );
-}
+};
+
+export default Navbar;

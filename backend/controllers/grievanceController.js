@@ -1,10 +1,12 @@
 const Grievance = require('../models/grievanceModel');
 const Department = require('../models/departmentModel');
 
+// Generate ticket number
 const generateTicketNo = () => {
   return 'TICKET-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 };
 
+// Submit grievance
 const submitGrievance = async (req, res) => {
   const { departmentId, title, description } = req.body;
 
@@ -22,6 +24,7 @@ const submitGrievance = async (req, res) => {
   }
 };
 
+// Update grievance status (Reject/Approve)
 const updateGrievanceStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -36,6 +39,7 @@ const updateGrievanceStatus = async (req, res) => {
   }
 };
 
+// Search grievance by ticket number
 const searchGrievanceByTicket = async (req, res) => {
   const { ticketNo } = req.params;
 
@@ -49,6 +53,7 @@ const searchGrievanceByTicket = async (req, res) => {
   }
 };
 
+// Get all grievances
 const getAllGrievances = async (req, res) => {
   try {
     const grievances = await Grievance.find().populate('department');
@@ -57,10 +62,27 @@ const getAllGrievances = async (req, res) => {
     res.status(500).json({ message: 'Error fetching grievances', error: err });
   }
 };
+const deleteGrievance = async (req, res) => {
+  const grievanceId = req.params.id;
+
+  try {
+    const grievance = await Grievance.findByIdAndDelete(grievanceId);
+
+    if (!grievance) {
+      return res.status(404).json({ message: 'Grievance not found' });
+    }
+
+    res.json({ message: 'Grievance rejected and deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting grievance:', err);
+    res.status(500).json({ message: 'Server error while rejecting grievance' });
+  }
+};
 
 module.exports = {
   submitGrievance,
   updateGrievanceStatus,
   searchGrievanceByTicket,
-  getAllGrievances
+  getAllGrievances,
+  deleteGrievance
 };

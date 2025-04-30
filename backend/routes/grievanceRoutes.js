@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const {
-  submitGrievance,
-  updateGrievanceStatus,
+  getAllGrievances,
   searchGrievanceByTicket,
-  getAllGrievances
+  updateGrievanceStatus,
+  deleteGrievance, 
 } = require('../controllers/grievanceController');
 
-router.post('/submit', submitGrievance);
-router.put('/:id/status', updateGrievanceStatus);
-router.get('/search/:ticketNo', searchGrievanceByTicket);
 router.get('/', getAllGrievances);
+router.get('/search/:ticketNo', searchGrievanceByTicket);
+router.put('/:id/status', updateGrievanceStatus);
+router.delete('/:id', deleteGrievance);
 
 module.exports = router;
