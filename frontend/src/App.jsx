@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './pages/Login'; 
 import GrievanceForm from './pages/GrievancePage'; 
 import Dashboard from './pages/Dashboard';
+import Register from './pages/Register';
+import HodDashboard from './pages/HodDashboard';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -30,6 +32,8 @@ export default function App() {
           path="/dashboard"
           element={isLoggedIn ? <Dashboard /> : <Login setIsLoggedIn={setIsLoggedIn} />}
         />
+        <Route path="/register" element={<Register />} />
+        <Route path="/hoddashboard" element={isLoggedIn ? <HodDashboard /> : <Login setIsLoggedIn={setIsLoggedIn} />} />
       </Routes>
     </Router>
   );

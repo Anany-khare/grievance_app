@@ -11,9 +11,10 @@ export default function Login({ setIsLoggedIn }) {
   // ✅ Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    if (token) {
-      setIsLoggedIn(true); // Optional: update parent state
-      navigate('/dashboard');
+    const role = localStorage.getItem('userRole');
+    if (token && role) {
+      setIsLoggedIn(true);
+      navigate(role === 'HOD' ? '/hoddashboard' : '/dashboard');
     }
   }, [navigate, setIsLoggedIn]);
 
@@ -26,11 +27,21 @@ export default function Login({ setIsLoggedIn }) {
         { withCredentials: true }
       );
 
-      const { token } = response.data;
+      const { token, user } = response.data;
 
+      // ✅ Save token and role in localStorage
       localStorage.setItem('authToken', token);
+      localStorage.setItem('userRole', user.role);
       setIsLoggedIn(true);
-      navigate('/dashboard');
+
+      // ✅ Redirect based on role
+      if (user.role === 'ADMIN') {
+        navigate('/dashboard');
+      } else if (user.role === 'HOD') {
+        navigate('/hoddashboard');
+      } else {
+        alert('Unauthorized role');
+      }
     } catch (err) {
       alert('Login failed');
       console.error(err);

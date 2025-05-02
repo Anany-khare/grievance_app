@@ -1,41 +1,76 @@
 const Grievance = require('../models/grievanceModel');
 const Department = require('../models/departmentModel');
+const User = require('../models/userModel'); // Assuming this is how you access the logged-in user
 
 // Generate ticket number
 const generateTicketNo = () => {
   return 'TICKET-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 };
 
-// Submit grievance
+// Submit grievance function
 const submitGrievance = async (req, res) => {
-  const { departmentId, title, description } = req.body;
+  const { title, description, departmentId } = req.body;
 
   try {
+    // Check if departmentId is provided
+    if (!departmentId) {
+      return res.status(400).json({ message: 'Department is required' });
+    }
+
+    // Validate if the department exists
     const department = await Department.findById(departmentId);
-    if (!department) return res.status(404).json({ message: 'Department not found' });
+    if (!department) {
+      return res.status(404).json({ message: 'Department not found' });
+    }
 
+    // Generate a ticket number for the grievance
     const ticketNo = generateTicketNo();
-    const grievance = new Grievance({ department, title, description, ticketNo });
-    await grievance.save();
 
-    res.status(201).json({ message: 'Grievance submitted', ticketNo });
+    // Create and save grievance
+    const grievance = new Grievance({
+      department: department._id,
+      title,
+      description,
+      ticketNo,
+      status: 'Pending', // Default status
+    });
+
+    await grievance.save();
+    return res.status(201).json({ message: 'Grievance submitted successfully', ticketNo });
+
   } catch (err) {
-    res.status(500).json({ message: 'Error submitting grievance', error: err });
+    console.error(err);
+    return res.status(500).json({ message: 'Error submitting grievance', error: err.message });
   }
 };
 
-// Update grievance status (Reject/Approve)
+// Update grievance status (for HOD or Admin)
 const updateGrievanceStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  try {
-    const grievance = await Grievance.findByIdAndUpdate(id, { status }, { new: true });
-    if (!grievance) return res.status(404).json({ message: 'Grievance not found' });
+  // Ensure status is one of the allowed values
+  const allowedStatuses = ['Pending', 'In Progress', 'Resolved', 'Rejected'];
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value' });
+  }
 
-    res.status(200).json({ message: 'Status updated', grievance });
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating status', error: err });
+  try {
+    // Find the grievance by ID and update the status
+    const updatedGrievance = await Grievance.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true } // Return the updated grievance
+    );
+
+    if (!updatedGrievance) {
+      return res.status(404).json({ message: 'Grievance not found' });
+    }
+
+    return res.status(200).json(updatedGrievance);
+  } catch (error) {
+    console.error('Error updating grievance status:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -53,29 +88,67 @@ const searchGrievanceByTicket = async (req, res) => {
   }
 };
 
-// Get all grievances
+// Get all grievances (Admin or Proctor can view all)
 const getAllGrievances = async (req, res) => {
   try {
-    const grievances = await Grievance.find().populate('department');
-    res.status(200).json(grievances);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching grievances', error: err });
+    const grievances = await Grievance.find()
+    .populate('department');
+    return res.status(200).json(grievances);
+  } catch (error) {
+    console.error('Error fetching grievances:', error);
+    return res.status(500).json({ message: 'Error fetching grievances', error: error.message });
   }
 };
+// Get grievances for HOD's department
+const getGrievancesByDepartment = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: User not logged in' });
+    }
+    const user = await User.findById(req.user.id).populate('department');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.role !== 'HOD') {
+      return res.status(403).json({ message: 'Only HOD can access this route' });
+    }
+    if (!user.department) {
+      return res.status(400).json({ message: 'User has no department' });
+    }
+    console.log('Fetching grievances for department:', deptId); // 🔍 Log department
+    const grievances = await Grievance.find({ department: user.department._id })
+
+    if (grievances.length === 0) {
+      return res.status(404).json({ message: 'No grievances found' });
+    }
+
+    res.status(200).json(grievances);
+
+  } catch (err) {
+    console.error('Error fetching grievances:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+};
+
+
+// Delete grievance (for Admin or HOD)
+
 const deleteGrievance = async (req, res) => {
   const grievanceId = req.params.id;
 
   try {
-    const grievance = await Grievance.findByIdAndDelete(grievanceId);
-
+    const grievance = await Grievance.findById(grievanceId);
     if (!grievance) {
       return res.status(404).json({ message: 'Grievance not found' });
     }
 
-    res.json({ message: 'Grievance rejected and deleted successfully' });
+    // Perform deletion directly
+    await Grievance.findByIdAndDelete(grievanceId);
+
+    res.status(200).json({ message: 'Grievance deleted successfully' });
   } catch (err) {
     console.error('Error deleting grievance:', err);
-    res.status(500).json({ message: 'Server error while rejecting grievance' });
+    res.status(500).json({ message: 'Error deleting grievance' });
   }
 };
 
@@ -84,5 +157,6 @@ module.exports = {
   updateGrievanceStatus,
   searchGrievanceByTicket,
   getAllGrievances,
-  deleteGrievance
+  getGrievancesByDepartment,
+  deleteGrievance,
 };

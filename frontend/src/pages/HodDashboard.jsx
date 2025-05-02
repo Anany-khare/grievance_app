@@ -2,11 +2,57 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const Dashboard = () => {
+const HodDashboard = () => {
   const [grievances, setGrievances] = useState([]);
   const [searchTicketNo, setSearchTicketNo] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+//   const [departmentId, setDepartmentId] = useState(null);
+
+
+  const fetchDepartment = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const res = await axios.get('http://localhost:5000/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        timeout: 10000
+      });
+
+      console.log("✅ /me response:", res.data);
+
+      const deptId = res.data?.department?._id;
+      if (!deptId) {
+        console.warn("⚠️ Department not assigned.");
+        return;
+      }
+
+      console.log("🏢 Department ID:", deptId);
+      setDepartmentId(deptId);
+    } catch (err) {
+      console.error("❌ Error fetching department:", err);
+    }
+  };
+
+  const fetchGrievances = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const res = await axios.get('http://localhost:5000/api/grievance/department', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        timeout: 10000
+      });
+
+      console.log("📋 Grievances fetched:", res.data);
+      setGrievances(res.data);
+    } catch (err) {
+      console.error("❌ Error fetching grievances:", err);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -15,23 +61,13 @@ const Dashboard = () => {
       return;
     }
 
-    fetchGrievances(); // Fetch grievances initially when the component loads
-  }, [navigate]);
+    const loadData = async () => {
+      await fetchDepartment();
+      await fetchGrievances(); // works after departmentId is set
+    };
 
-  const fetchGrievances = async () => {
-    const token = localStorage.getItem('authToken');
-    try {
-      const res = await axios.get('http://localhost:5000/api/grievance', {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      setGrievances(res.data);
-    } catch (err) {
-      console.error('Error fetching grievances:', err);
-    }
-  };
+    loadData();
+  }, [navigate]);
 
   const handleSearch = async () => {
     const token = localStorage.getItem('authToken');
@@ -95,7 +131,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow">
-        <a href="/"><h1 className="text-xl font-semibold">Grievance Dashboard</h1></a>
+        <a href="/"><h1 className="text-xl font-semibold">HOD Dashboard</h1></a>
         <div className="flex gap-4 items-center">
           <input
             type="text"
@@ -110,9 +146,6 @@ const Dashboard = () => {
           >
             {isSearching ? 'Clear' : 'Search'}
           </button>
-          <button onClick={() => navigate('/register')}
-      className="bg-white text-blue-600 px-3 py-1 rounded">
-      New Registration </button>
           <button
             onClick={handleLogout}
             className="bg-white text-blue-600 px-3 py-1 rounded"
@@ -123,7 +156,7 @@ const Dashboard = () => {
       </nav>
 
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Grievance Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-4">HOD Grievance Dashboard</h1>
 
         {grievances.length === 0 ? (
           <p>No grievances found.</p>
@@ -179,4 +212,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default HodDashboard;
