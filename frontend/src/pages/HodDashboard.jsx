@@ -7,101 +7,75 @@ const HodDashboard = () => {
   const [searchTicketNo, setSearchTicketNo] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
-//   const [departmentId, setDepartmentId] = useState(null);
-
-
-  const fetchDepartment = async () => {
-    const token = localStorage.getItem('authToken');
-    try {
-      const res = await axios.get('http://localhost:5000/api/auth/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-        timeout: 10000
-      });
-
-      console.log("✅ /me response:", res.data);
-
-      const deptId = res.data?.department?._id;
-      if (!deptId) {
-        console.warn("⚠️ Department not assigned.");
-        return;
-      }
-
-      console.log("🏢 Department ID:", deptId);
-      setDepartmentId(deptId);
-    } catch (err) {
-      console.error("❌ Error fetching department:", err);
-    }
-  };
 
   const fetchGrievances = async () => {
-    const token = localStorage.getItem('authToken');
-    try {
-      const res = await axios.get('http://localhost:5000/api/grievance/department', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-        timeout: 10000
-      });
-
-      console.log("📋 Grievances fetched:", res.data);
-      setGrievances(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching grievances:", err);
-    }
-  };
-
+      const token = localStorage.getItem('authToken');
+      // console.log("🚨 Token fetched:", token);
+    
+      try {    
+        const res = await axios.get('http://localhost:5000/api/grievance/department', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+          timeout: 10000,
+        });    
+        setGrievances(res.data);
+      } catch (err) {
+        console.error("❌ Error fetching grievances:", err);
+      }
+    };
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
       navigate('/');
       return;
     }
-
-    const loadData = async () => {
-      await fetchDepartment();
-      await fetchGrievances(); // works after departmentId is set
-    };
-
-    loadData();
+    fetchGrievances();
   }, [navigate]);
 
   const handleSearch = async () => {
+    if (!searchTicketNo.trim()) {
+      alert('Enter a ticket number to search.');
+      return;
+    }
+
     const token = localStorage.getItem('authToken');
-    setIsSearching(true); // Set search mode to true before sending the request
+    setIsSearching(true);
 
     try {
       const res = await axios.get(`http://localhost:5000/api/grievance/search/${searchTicketNo}`, {
         withCredentials: true,
         headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
       });
-      setGrievances([res.data]); // Display only the searched grievance
+      setGrievances([res.data]);
     } catch (err) {
       console.error('Error searching grievance:', err);
-      setGrievances([]); // Clear grievances if not found
+      setGrievances([]);
     }
   };
 
   const handleClearSearch = () => {
     setSearchTicketNo('');
-    fetchGrievances(); // Fetch all grievances again
-    setIsSearching(false); // Reset search mode
+    fetchGrievances();
+    setIsSearching(false);
   };
 
   const updateStatus = async (id, newStatus) => {
     const token = localStorage.getItem('authToken');
     try {
-      await axios.put(`http://localhost:5000/api/grievance/${id}/status`, { status: newStatus }, {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${token}`,
+      await axios.put(
+        `http://localhost:5000/api/grievance/${id}/status`,
+        { status: newStatus },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       fetchGrievances();
     } catch (err) {
       console.error(`Error updating to ${newStatus}:`, err);
@@ -115,7 +89,7 @@ const HodDashboard = () => {
         withCredentials: true,
         headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
       });
       fetchGrievances();
     } catch (err) {
@@ -131,7 +105,9 @@ const HodDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow">
-        <a href="/"><h1 className="text-xl font-semibold">HOD Dashboard</h1></a>
+        <a href="/">
+          <h1 className="text-xl font-semibold">HOD Dashboard</h1>
+        </a>
         <div className="flex gap-4 items-center">
           <input
             type="text"

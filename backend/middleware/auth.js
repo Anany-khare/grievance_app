@@ -3,7 +3,6 @@ const User = require('../models/userModel');
 
 const auth = (allowedRoles = []) => {
   return async (req, res, next) => {
-    // Check both header and cookie
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ')
       ? authHeader.split(' ')[1]
@@ -13,14 +12,14 @@ const auth = (allowedRoles = []) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id);
+      const user = await User.findById(decoded.id).populate('department');
       if (!user) return res.status(401).json({ message: 'Invalid token' });
 
       if (allowedRoles.length && !allowedRoles.includes(user.role)) {
         return res.status(403).json({ message: 'Not allowed' });
       }
 
-      req.user = user; // This will now be available in /user/me
+      req.user = user;
       next();
     } catch (err) {
       return res.status(401).json({ message: 'Invalid token', error: err.message });

@@ -102,31 +102,16 @@ const getAllGrievances = async (req, res) => {
 // Get grievances for HOD's department
 const getGrievancesByDepartment = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized: User not logged in' });
-    }
-    const user = await User.findById(req.user.id).populate('department');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    if (user.role !== 'HOD') {
-      return res.status(403).json({ message: 'Only HOD can access this route' });
-    }
-    if (!user.department) {
-      return res.status(400).json({ message: 'User has no department' });
-    }
-    console.log('Fetching grievances for department:', deptId); // 🔍 Log department
-    const grievances = await Grievance.find({ department: user.department._id })
+    const user = req.user;
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (grievances.length === 0) {
-      return res.status(404).json({ message: 'No grievances found' });
-    }
+    const departmentName = user.department?.name;
+    if (!departmentName) return res.status(400).json({ message: 'Department not assigned' });
 
+    const grievances = await Grievance.find({ department: user.department._id }).populate('department');
     res.status(200).json(grievances);
-
   } catch (err) {
-    console.error('Error fetching grievances:', err);
-    res.status(500).json({ message: 'Internal server error', error: err.message });
+    res.status(500).json({ message: 'Error fetching grievances', error: err.message });
   }
 };
 
